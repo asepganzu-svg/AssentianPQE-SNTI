@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/svg+xml" href="/snti-coin.svg"><link rel="shortcut icon" href="/snti-coin.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNTI Mining Dashboard</title>
+<style>
+:root{--bg:#0a0e17;--card:#111827;--border:#2a3a55;--text:#e8edf5;--dim:#8899bb;--accent:#00d4aa;--blue:#3b82f6;--purple:#a855f7;--orange:#f59e0b;--green:#22c55e;--red:#ef4444}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'SF Mono','Fira Code',monospace;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1200px;margin:0 auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:20px}
+.logo{font-size:22px;font-weight:800;color:var(--accent)}
+.logo small{font-size:10px;color:var(--dim);display:block;letter-spacing:2px}
+.status{display:flex;align-items:center;gap:8px;font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card .label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.card .value{font-size:28px;font-weight:700}
+.card .bar{height:3px;border-radius:3px;margin-top:12px}
+.card:nth-child(1) .bar{background:var(--accent)}
+.card:nth-child(2) .bar{background:var(--blue)}
+.card:nth-child(3) .bar{background:var(--purple)}
+.card:nth-child(4) .bar{background:var(--orange)}
+.card:nth-child(5) .bar{background:var(--green)}
+.card:nth-child(6) .bar{background:var(--accent)}
+.info-box{background:var(--card);border:1px solid rgba(0,212,170,.2);border-radius:12px;padding:16px 20px;margin-bottom:20px;font-size:13px;color:var(--dim);line-height:1.8}
+.info-box span{color:var(--accent);font-weight:600}
+.log-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:20px}
+.log-entry{font-size:12px;line-height:2.2;padding:2px 0;border-bottom:1px solid rgba(42,58,85,.3)}
+.log-entry:last-child{border-bottom:none}
+.log-time{color:var(--dim);margin-right:10px}
+.log-signed{color:var(--green)}
+.log-gen{color:var(--blue)}
+.log-info{color:var(--dim)}
+.refresh{font-size:11px;color:var(--dim);text-align:center;margin-top:16px}
+.back-link{font-size:13px;color:var(--dim)}
+.back-link:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">SNTI <small>MINING DASHBOARD</small></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <a href="/wallet/" class="back-link">← Back to Wallet</a>
+      <div class="status">
+        <div class="dot" id="statusDot" style="background:var(--dim)"></div>
+        <span id="statusText">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="info-box">
+    ⛏ SNTI menggunakan <span>XMSS Post-Quantum Solo Mining</span> — setiap miner memiliki node dan XMSS key sendiri, mining secara independen. Tidak ada pool, tidak ada stratum. Satu device = satu key = satu miner.
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">Node Uptime</div>
+      <div class="value" id="mUptime" style="color:var(--accent)">—</div>
+      <div class="bar"></div>
+    </div>
+    <div class="card">
+      <div class="label">Block Height</div>
+      <div class="value" id="mBlocks" style="color:var(--blue)">—</div>
+      <div class="bar"></div>
+    </div>
+    <div class="card">
+      <div class="label">Avg Block Time</div>
+      <div class="value" id="mAvgTime" style="color:var(--purple)">—</div>
+      <div class="bar"></div>
+    </div>
+    <div class="card">
+      <div class="label">Last Block</div>
+      <div class="value" id="mLastBlock" style="font-size:13px;color:var(--text)">—</div>
+      <div class="bar"></div>
+    </div>
+    <div class="card">
+      <div class="label">PoUW Status</div>
+      <div class="value" id="mPoUW" style="color:var(--green)">—</div>
+      <div class="bar"></div>
+    </div>
+    <div class="card">
+      <div class="label">Signature Size</div>
+      <div class="value" id="mSigSize" style="color:var(--accent)">—</div>
+      <div class="bar"></div>
+    </div>
+  </div>
+
+  <div class="log-box">
+    <div class="label" style="margin-bottom:12px">⛏ PoUW Mining Log (last 20 entries)</div>
+    <div id="miningLog">
+      <div style="color:var(--dim);text-align:center;padding:30px">Loading...</div>
+    </div>
+  </div>
+
+  <div class="refresh" id="refreshTime">Last updated: —</div>
+</div>
+
+<script>
+async function loadMining() {
+  try {
+    const r = await fetch('/api/mining/status');
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    document.getElementById('statusDot').style.background = 'var(--green)';
+    document.getElementById('statusText').textContent = 'Connected — Mining Active';
+    document.getElementById('mUptime').textContent = d.uptime_human || '—';
+    document.getElementById('mBlocks').textContent = d.blocks_mined ?? '—';
+    document.getElementById('mAvgTime').textContent = d.avg_block_time ? d.avg_block_time.toFixed(1) + 's' : '—';
+    document.getElementById('mLastBlock').textContent = d.last_block_time || '—';
+    document.getElementById('mSigSize').textContent = d.sig_size ? d.sig_size.toLocaleString() + ' B' : '—';
+
+    if (d.pouw_enabled) {
+      document.getElementById('mPoUW').textContent = '✓ Active';
+      document.getElementById('mPoUW').style.color = 'var(--green)';
+    } else {
+      document.getElementById('mPoUW').textContent = '✗ Inactive';
+      document.getElementById('mPoUW').style.color = 'var(--dim)';
+    }
+
+    if (d.recent_logs && d.recent_logs.length) {
+      document.getElementById('miningLog').innerHTML = d.recent_logs.map(l => {
+        const time = l.timestamp || '';
+        const msg = l.message || '';
+        let cls = 'log-info';
+        if (msg.includes('signed successfully')) cls = 'log-signed';
+        else if (msg.includes('key generated')) cls = 'log-gen';
+        return '<div class="log-entry"><span class="log-time">[' + time + ']</span><span class="' + cls + '">' + msg + '</span></div>';
+      }).join('');
+    } else {
+      document.getElementById('miningLog').innerHTML = '<div style="color:var(--dim);text-align:center;padding:20px">No mining log entries yet</div>';
+    }
+  } catch(e) {
+    document.getElementById('statusDot').style.background = 'var(--red)';
+    document.getElementById('statusText').textContent = 'Error: ' + e.message;
+  }
+}
+
+async function refresh() {
+  await loadMining();
+  document.getElementById('refreshTime').textContent = 'Last updated: ' + new Date().toLocaleString();
+}
+
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

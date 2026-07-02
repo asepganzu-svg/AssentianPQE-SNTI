@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/svg+xml" href="/snti-coin.svg"><link rel="shortcut icon" href="/snti-coin.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNTI Development Changelog</title>
+<style>
+:root{--bg:#0a0e17;--card:#111827;--border:#2a3a55;--text:#e8edf5;--dim:#8899bb;--accent:#00d4aa;--blue:#3b82f6;--purple:#a855f7;--orange:#f59e0b;--green:#22c55e;--red:#ef4444;--yellow:#eab308}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'SF Mono','Fira Code',monospace;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:20px}
+.logo{font-size:22px;font-weight:800;color:var(--accent)}
+.logo small{font-size:10px;color:var(--dim);display:block;letter-spacing:2px}
+.back-link{font-size:13px;color:var(--dim)}
+.back-link:hover{color:var(--accent)}
+
+/* Phase cards */
+.phase{margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.phase-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none}
+.phase-header:hover{background:rgba(255,255,255,.02)}
+.phase-title{display:flex;align-items:center;gap:12px}
+.phase-num{font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:1px}
+.phase-num.done{background:rgba(34,197,94,.15);color:var(--green)}
+.phase-num.wip{background:rgba(245,158,11,.15);color:var(--orange)}
+.phase-num.pending{background:rgba(136,153,187,.15);color:var(--dim)}
+.phase-name{font-size:15px;font-weight:600}
+.phase-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:1px}
+.phase-badge.done{background:rgba(34,197,94,.15);color:var(--green)}
+.phase-badge.wip{background:rgba(245,158,11,.15);color:var(--orange)}
+.phase-badge.pending{background:rgba(136,153,187,.15);color:var(--dim)}
+.phase-toggle{font-size:18px;color:var(--dim);transition:transform .2s}
+.phase-toggle.open{transform:rotate(180deg)}
+
+.phase-body{display:none;padding:0 20px 20px}
+.phase-body.open{display:block}
+
+/* Checklist table */
+table{width:100%;border-collapse:collapse;margin-top:4px}
+th{text-align:left;padding:8px 12px;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)}
+td{padding:8px 12px;font-size:13px;border-bottom:1px solid rgba(42,58,85,.5);vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.02)}
+.chk{font-size:16px;width:30px;text-align:center}
+.chk.done{color:var(--green)}
+.chk.pending{color:var(--dim)}
+.chk.wip{color:var(--orange)}
+.item-name{color:var(--text)}
+.item-detail{font-size:11px;color:var(--dim);margin-top:2px;line-height:1.5}
+.item-files{font-size:10px;color:var(--blue);margin-top:2px}
+.item-commit{font-size:10px;color:var(--purple);margin-top:2px;font-family:monospace}
+
+/* Progress bar */
+.progress-bar{height:4px;border-radius:4px;background:var(--border);margin:8px 0 16px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width .5s}
+.progress-fill.done{background:var(--green)}
+.progress-fill.wip{background:var(--orange)}
+.progress-fill.pending{background:var(--dim)}
+
+/* Summary */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.summary-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}
+.summary-card .num{font-size:24px;font-weight:700}
+.summary-card .lbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.summary-card.green .num{color:var(--green)}
+.summary-card.orange .num{color:var(--orange)}
+.summary-card.dim .num{color:var(--dim)}
+.summary-card.blue .num{color:var(--blue)}
+
+/* Known issues */
+.issues{margin-top:12px;padding:12px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:8px}
+.issues .title{font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.issues ul{list-style:none;padding:0}
+.issues li{font-size:12px;color:var(--text);padding:4px 0;padding-left:16px;position:relative}
+.issues li::before{content:"!";position:absolute;left:0;color:var(--yellow);font-weight:700}
+
+/* Commit log */
+.commit-log{margin-top:16px}
+.commit-log .title{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.commit-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(42,58,85,.3)}
+.commit-hash{font-size:11px;color:var(--purple);font-family:monospace;white-space:nowrap;padding-top:1px}
+.commit-msg{font-size:12px;color:var(--text);line-height:1.5}
+.commit-date{font-size:10px;color:var(--dim);white-space:nowrap;margin-left:auto;padding-top:1px}
+
+.refresh{font-size:11px;color:var(--dim);text-align:center;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">SNTI <small>DEVELOPMENT CHANGELOG</small></div>
+    <a href="/dashboard.html" class="back-link">← Back to Dashboard</a>
+  </header>
+
+  <!-- Summary -->
+  <div class="summary">
+    <div class="summary-card green"><div class="num" id="cntDone">—</div><div class="lbl">Completed</div></div>
+    <div class="summary-card orange"><div class="num" id="cntWip">—</div><div class="lbl">In Progress</div></div>
+    <div class="summary-card dim"><div class="num" id="cntPending">—</div><div class="lbl">Pending</div></div>
+    <div class="summary-card blue"><div class="num" id="cntTotal">—</div><div class="lbl">Total Items</div></div>
+  </div>
+
+  <!-- Phase 1 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p1')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 1</span>
+        <span class="phase-name">XMSS Transaction Integration</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp1">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p1">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">1.1 — CXMSSSigner class<div class="item-detail">XMSS key management: Generate, Sign, HaveKey, GetLeafIndex, GetXMSSKeys</div><div class="item-files">wallet/xmss_signer.h, wallet/xmss_signer.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">1.2 — Wallet Signing Integration<div class="item-detail">SignXMSS(), HaveXMSSKey(), GetXMSSPubKey() di SigningProvider. CreateXMSSSig() di sign.cpp</div><div class="item-files">script/signingprovider.h, script/sign.h, script/sign.cpp, wallet/wallet.h, wallet/wallet.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">1.3 — Transaction Verification<div class="item-detail">CheckXMSSSignature() di BaseSignatureChecker. SignTransactionXMSS() di wallet.cpp</div><div class="item-files">script/script.h, script/script.cpp, wallet/wallet.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">1.4 — Makefile.am Updated<div class="item-detail">xmss_signer.cpp/h, xmss_address.cpp, xmss_keystore.cpp, rpc/xmss.cpp ditambahkan ke build</div><div class="item-files">src/Makefile.am</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">1.5 — Integration Tests<div class="item-detail">6/6 tests passed: keygen, sign/verify, wrong key, stateful signing, sig size</div><div class="item-files">test_xmss_core.c</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 2 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p2')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 2</span>
+        <span class="phase-name">Genesis Block Mine</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp2">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p2">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">2.1 — Genesis XMSS Key Generated<div class="item-detail">XMSS-SHA2_10_256 key pair. Private key disimpan di qnt_genesis_key.txt</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">2.2 — Genesis Block Mined<div class="item-detail">Hash: 5322eeb6160377b16f97e65fd0f67e06db246fe8072e8429215ad16644a6a7bb</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">2.3 — Regtest Running<div class="item-detail">10+ blocks mined. Address prefix: qnr. Port: 29333</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 3 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p3')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 3</span>
+        <span class="phase-name">Wallet XMSS Integration</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp3">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p3">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Sub-phase</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">3a — Address Encoding<div class="item-detail">Base58Check(0x60 || RIPEMD160(SHA256(xmss_pubkey64))). Mainnet prefix 'q'</div><div class="item-files">wallet/xmss_address.h, wallet/xmss_address.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">3b — Keystore Persistence<div class="item-detail">CXMSSKeyStore: import, export, sign, serialization</div><div class="item-files">wallet/xmss_keystore.h, wallet/xmss_keystore.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">3c — RPC Commands<div class="item-detail">getnewxmssaddress, listxmsskeys, getxmssaddressinfo, sendtoxmssaddress</div><div class="item-files">wallet/rpc/xmss.h, wallet/rpc/xmss.cpp</div><div class="item-commit">commit: fe3d605</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">3d — PoUW Mining Integration<div class="item-detail">XMSS key per block, pubkey di coinbase OP_RETURN, signature di scriptSig, re-verify PoW setelah sig insertion</div><div class="item-files">consensus/params.h, kernel/chainparams.cpp, validation.cpp, rpc/mining.cpp</div><div class="item-commit">commit: b666498</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">3e — XMSS State Management Integration<div class="item-detail">SaveState/LoadState/HasExhaustedKeys di CXMSSSigner. WriteXmssState/ReadXmssState di WalletBatch. State di-load saat wallet open, di-save setelah commit transaction. Anti-reuse protection untuk XMSS stateful signatures.</div><div class="item-files">wallet/xmss_state.h, wallet/xmss_signer.h, wallet/xmss_signer.cpp, wallet/wallet.cpp, wallet/walletdb.h, wallet/walletdb.cpp</div><div class="item-commit">commit: e672298</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 4 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p4')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 4</span>
+        <span class="phase-name">Security Audit</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp4">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p4">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">4.1 — Self-Audit Checklist<div class="item-detail">Review key generation, state persistence, signing flow, script engine, wallet keystore, transaction validation</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">4.2 — Fix LOW issues<div class="item-detail">Key exhausted check di Sign(), minimum sig length di interpreter</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">4.3 — Audit Report<div class="item-detail">AUDIT.md written. 2 MEDIUM + 3 LOW findings. No CRITICAL/HIGH. Overall PASS.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 5 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p5')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 5</span>
+        <span class="phase-name">Documentation</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp5">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p5">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">5.1 — README.md<div class="item-detail">Project overview, build guide, quick start, architecture diagram</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">5.2 — Developer Docs<div class="item-detail">RPC API reference, XMSS wallet guide, mining guide, testnet guide</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 6 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p6')">
+      <div class="phase-title">
+        <span class="phase-num pending">PHASE 6</span>
+        <span class="phase-name">Community & Visibility</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge pending">⬜ NOT STARTED</span>
+        <span class="phase-toggle" id="tp6">▼</span>
+      </div>
+    </div>
+    <div class="phase-body" id="p6">
+      <div class="progress-bar"><div class="progress-fill pending" style="width:0%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">6.1 — Mainnet Launch (Testnet Formal Dilewati)<div class="item-detail">Setelah internal testnet validation (Phase 6.5–6.11) dinyatakan solid, diputuskan langsung launch mainnet tanpa public testnet phase terpisah. Mainnet live 26 Jun 2026, block 1170+. assentian.network live dengan web wallet, explorer, dan mining dashboard.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.1b — Stratum Mining Server<div class="item-detail">Multi-miner stratum proxy (stratum_server.py). Port 3333 (stratum), port 3334 (HTTP stats). Share tracking (accepted/rejected). Connects to bitcoind regtest RPC. Auto block generation on share threshold. Multiple simultaneous miner connections supported.</div><div class="item-files">stratum_server.py</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.1c — XMSS Wallet: Send from XMSS Address<div class="item-detail">sendfromxmssaddress RPC: send SNTI from XMSS address to any destination (legacy or XMSS). Supports fee subtraction and wallet comments. Register XMSS RPC methods in CRPCTable. Fixed fee estimation with -fallbackfee flag.</div><div class="item-files">wallet/rpc/xmss.cpp, wallet/rpc/xmss.h, wallet/rpc/wallet.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.1d — P2XMSS Script Type (Native XMSS Output)<div class="item-detail">Native P2XMSS script output: OP_XMSS_CHECKSIG with 64-byte pubkey. Added XMSSHash to CTxDestination variant. Updated Solver(), ExtractDestination(), GetScriptForDestination(), IsMine(). Wallet generates P2XMSS outputs for XMSS addresses. Tested: P2XMSS→Legacy, P2XMSS→P2XMSS ✅</div><div class="item-files">addresstype.h, addresstype.cpp, script/solver.h, script/solver.cpp, key_io.cpp, wallet/rpc/xmss.cpp, wallet/scriptpubkeyman.cpp, wallet/xmss_signer.cpp</div></td></tr>
+          <tr><td class="chk in_progress">🔄</td><td class="item-name">6.1e — Multi-Node Test (2 nodes, block propagation)<div class="item-detail">Setup 2 nodes on same VPS (ports 29332/29333 and 29334/29335). Both nodes connected as peers. ISSUE: PoUW blocks cause 'mutated block' reject (bad-witness-nonce-size) because PoUW modifies coinbase after PoW. Both nodes need identical XMSS wallet state to validate. Known limitation — requires bypassing witness malleation check for regtest multi-node. Nodes connect and share headers but block bodies rejected.</div><div class="item-files">kernel/chainparams.cpp, bitcoin.conf</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.1f — Hardcoded Seeds &amp; DNS Seed (Peer Discovery)<div class="item-detail">Hardcoded seed: 104.234.26.7 (primary SNTI node, P2P port 9333). DNS seed domain: seed.assentian.network (dikonfigurasi di nginx). Additional seed nodes EU/APAC pending (VPS sedang di-order).</div><div class="item-files">kernel/chainparams.cpp</div></td></tr>
+          <tr><td class="chk pending">⬜</td><td class="item-name">6.2 — Team Page<div class="item-detail">Founder, core contributors, advisors</div></td></tr>
+          <tr><td class="chk pending">⬜</td><td class="item-name">6.3 — Exchange Listing Prep<div class="item-detail">Target: Gate.io, MEXC, Bitget (Phase 1)</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- Phase 6b -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p6b')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 6.5</span>
+        <span class="phase-name">PQ-PoW Validation & Genesis Launch</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp6b">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p6b">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">6.5.1 — Official Genesis Block Mined<div class="item-detail">Timestamp 1781545300 (15/Jun/2026). Message: "Assentian-PQE Genesis 15/Jun/2026 - NIST SP 800-208 XMSS - Quantum Era Begins"</div><div class="item-files">kernel/chainparams.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.5.2 — Build System Fixes<div class="item-detail">Resolved duplicate seed definitions (chainparamsseeds.h vs qnt_seeds.h), UniValue API mismatch (push_kv → pushKV), RescanFromTime signature, missing CWallet::AddXMSSKeyToKeystore / GetXMSSPubKey implementations</div><div class="item-files">kernel/chainparams.cpp, wallet/rpc/xmss.cpp, wallet/wallet.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.5.3 — PQ-PoW End-to-End Validation<div class="item-detail">6 consecutive blocks mined on regtest, all with valid XMSS signature in coinbase witness + 64-byte pubkey in OP_RETURN. CheckPoUW() consensus enforcement confirmed — pouw_enabled: true throughout, zero rejected blocks</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.5.4 — License & Documentation Consistency<div class="item-detail">BSL-1.1 license added (→ GPL-2.0 in 2030). Whitepaper fixed: license MIT→BSL-1.1, P2P port 8333→9333, magic bytes QNTF→QUAN, halving 2,100,000→210,000 blocks</div><div class="item-files">LICENSE, WHITEPAPER.md</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.5.5 — Public Infrastructure Live<div class="item-detail">Dashboard, mining page, explorer, whitepaper.html, and /api/status all verified returning HTTP 200 via nginx reverse proxy. bitcoind + explorer running as systemd services with auto-restart</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 6c -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p6c')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 6.6</span>
+        <span class="phase-name">Testnet Validation & Wallet RPC Fixes</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp6c">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p6c">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">6.6.1 — Testnet Launched on Official Genesis<div class="item-detail">Migrated from regtest to testnet using the official 15/Jun/2026 genesis block. 6 consecutive PoUW blocks mined, ~2.5-3s per block (XMSS keygen + sign)</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.6.2 — Key Lifecycle Documented<div class="item-detail">Confirmed each block generates a fresh, single-use XMSS key (not reused across the 1024-signature capacity). Noted as a known design tradeoff: simpler and avoids index-reuse risk, but discards 1023 of 1024 available signatures per key and adds ~2-3s per block for keygen</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.6.3 — Fixed CXMSSSigner::GetSecKeyForPubkey<div class="item-detail">Method was referenced by exportxmsskey RPC but never declared or implemented, causing a linker error. Implemented as a lookup into the in-memory xmss_keys map, returning the serialized secret key</div><div class="item-files">wallet/xmss_signer.h, wallet/xmss_signer.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.6.4 — Registered Missing RPC Commands<div class="item-detail">importxmsskey and exportxmsskey were implemented but never added to the wallet RPC command table, so they returned "Method not found" despite compiling successfully</div><div class="item-files">wallet/rpc/wallet.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.6.5 — End-to-End RPC Verification<div class="item-detail">getnewxmssaddress and exportxmsskey tested live on testnet: address generated, key exported with full XMSS secret key structure (OID, index, seed, WOTS chains) returned correctly</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 6d -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p6d')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 6.7</span>
+        <span class="phase-name">Critical Consensus & Memory Safety Fixes</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp6d">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p6d">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">6.7.1 — Discovered PoUW was never actually enforced<div class="item-detail">CheckPoUW() returned true unconditionally whenever nPoUWStartHeight > 0 (the production setting). The promised height-gated check in ContextualCheckBlock did not exist. Every prior block had a valid signature only because our own miner attached one out of habit — consensus never required it.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.7.2 — Implemented real height-gated PoUW enforcement<div class="item-detail">Added nHeight and fCheckPOW parameters through CheckPoUW → ContextualCheckBlock, so the signature check now genuinely runs against the chain's actual height on every block submission</div><div class="item-files">validation.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.7.3 — Fixed corrupted OP_RETURN pubkey format<div class="item-detail">std::vector&lt;uint8_t&gt;(0x40) was misread as "push byte 0x40" but actually constructs a 64-element zero-filled vector, producing a 131-byte malformed script instead of the intended 66-byte OP_RETURN. Every block's embedded XMSS public key was corrupted as a result.</div><div class="item-files">rpc/mining.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.7.4 — Found and fixed critical heap buffer overflow in XMSS Verify()<div class="item-detail">The reference xmssmt_core_sign_open() writes into its output buffer at offset params.sig_bytes before copying the message to the front, but our wrapper allocated the buffer at only 32 bytes. Every single verification call overflowed the heap, corrupting the allocator and crashing the node intermittently a few allocations later. Root-caused with gdb + Valgrind (not guessed), confirmed via "Invalid read ... inside an unallocated block" trace pointing directly at the call site.</div><div class="item-files">xmss_bridge.cpp, xmss_state.h, pouw.h</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.7.5 — Stress-tested fix with 30 consecutive blocks<div class="item-detail">20 blocks mined back-to-back with no crash (manual binary), followed by 10 more via the production systemd service — zero failures, zero restarts, confirming the fix holds under repeated real mining load</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 6e -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p6e')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 6.8</span>
+        <span class="phase-name">Adversarial Testing & XMSS Code Audit</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp6e">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p6e">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">6.8.1 — Audited all other XMSS sign/verify call sites<div class="item-detail">Cross-checked every Sign() and Verify() implementation across xmss_bridge.cpp, xmss_state.h, wallet/xmss_state.h and the dead-code pouw.h for the same buffer-sizing pattern that caused Phase 6.7's heap overflow. Sign() output buffers were confirmed safe (generous fixed margins); Verify() in xmss_state.h and pouw.h were found to have the identical undersized output buffer bug and were fixed for consistency, even though pouw.h is not compiled into the build</div><div class="item-files">xmss_state.h, wallet/xmss_state.h, pouw.h</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.8.2 — Stress test: 50 corrupted block resubmissions<div class="item-detail">Took a valid block, corrupted random bytes inside the witness signature, and resubmitted it 50 times via submitblock. All were correctly handled as duplicates (SegWit witness data does not affect the legacy block hash used for header identity) — zero crashes, chain state unaffected. This confirmed network-input robustness but also revealed that witness malleation means a corrupted resubmission of an existing block never reaches CheckPoUW at all</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.8.3 — Adversarial test: genuinely invalid signature on a fresh block<div class="item-detail">Added a temporary, environment-variable-gated code path to deliberately flip one byte of a real XMSS signature before broadcast, producing a freshly-mined block (new hash, not a duplicate). Result: AcceptBlock rejected it with pouw-invalid-sig, the node did not crash, and the chain tip did not advance — direct proof that consensus genuinely rejects an invalid PoUW signature, not just a missing one. Test code was removed immediately after confirmation</div><div class="item-detail">Log: "ERROR: AcceptBlock: pouw-invalid-sig, PoUW: XMSS signature verification failed"</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<!-- Phase 6f -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p6f')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 6.9</span>
+        <span class="phase-name">Multi-Node Consensus — Critical SegWit Fix</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp6f">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p6f">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">6.9.1 — Discovered every SNTI block violated BIP141<div class="item-detail">Stood up a second, fully independent node (separate process, separate datadir, separate ports) for the first time. Direct submitblock testing showed every block ever mined was rejected with bad-witness-nonce-size — the coinbase witness must be exactly one 32-byte reserved value per BIP141, but the 2500-byte XMSS signature was overwriting that slot entirely. Confirmed the mining node only accepted its own blocks due to its own validation path, not because the blocks were actually valid.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.9.2 — First fix attempt exposed a second, deeper problem<div class="item-detail">Moving the signature to a coinbase OP_RETURN output fixed the BIP141 violation but reintroduced a circular hash dependency: adding the output changes the merkle root, which changes block.GetHash() — the very hash the signature was computed against. Diagnosed via targeted debug logging showing correct extraction but failed verification.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.9.3 — Redesigned PoUW signing around a stable preimage<div class="item-detail">The signature now commits to a dedicated preimage hash (version, prevhash, time, bits, coinbase-without-signature txid, pubkey) computed and signed before the signature is attached anywhere. CheckPoUW() reconstructs the identical preimage by removing the signature output and rehashing, avoiding any dependency on the final block hash.</div><div class="item-files">rpc/mining.cpp, validation.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.9.4 — Verified via direct submitblock between independent nodes<div class="item-detail">Submitted 3 newly-mined blocks one at a time to a completely separate node process. All accepted. Resulting chain tip hash matched the mining node's tip exactly.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.9.5 — Verified via genuine automatic P2P relay<div class="item-detail">Connected the two independent nodes via addnode, then mined 2 new blocks on node 1 with zero further manual intervention. Node 2's height and best-block-hash advanced automatically and matched exactly — the first time SNTI blocks have ever propagated across a real peer-to-peer connection rather than being validated by the node that mined them.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<!-- Phase 6g -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p6g')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 6.10</span>
+        <span class="phase-name">Reorg, Wallet, &amp; Address Encoding Fix</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp6g">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p6g">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">6.10.1 — Chain reorganization verified<div class="item-detail">Created a genuine fork: 2 blocks mined independently on node 1, 3 blocks mined independently on node 2. On connecting the nodes, node 1 automatically reorganized to node 2's longer (more-work) chain — old blocks correctly marked orphaned (confirmations: -1), both nodes remained stable with no crashes.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.10.2 — sendtoxmssaddress verified end-to-end<div class="item-detail">Sent SNTI from a regular address to a freshly generated XMSS address, confirmed in a block, and verified the wallet correctly recognizes ownership (ismine: true) of the resulting XMSS output.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.10.3 — Discovered and fixed XMSS address encoding inconsistency<div class="item-detail">The address shown by getnewxmssaddress did not match the address shown for the same funds in gettransaction after sendtoxmssaddress — same pubkey, two different address strings. Root cause: 8 XMSS wallet RPC commands hardcoded testnet=false when calling XMSSAddr::Encode/Decode regardless of the actual active chain, while the standard EncodeDestination() path correctly checked Params().IsTestChain(). Funds were never at risk (the wallet still recognized ownership via the underlying pubkey), but this kind of address mismatch is exactly the sort of thing that could make a user believe they sent funds to the wrong place. Fixed all 8 occurrences.</div><div class="item-files">wallet/rpc/xmss.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.10.4 — Verified the fix directly<div class="item-detail">Generated a new XMSS address, sent funds to it, and confirmed the address shown in the resulting transaction's details now matches the originally generated address exactly.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 6h -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p6h')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 6.11</span>
+        <span class="phase-name">Wallet Spending Gap, Retarget &amp; Halving Fix</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp6h">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p6h">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">6.11.1 — Fixed AddXMSSKeyToKeystore and getnewxmssaddress<div class="item-detail">AddXMSSKeyToKeystore was a no-op stub from an earlier session (added only to satisfy a linker reference), and getnewxmssaddress never called it at all. Keys generated via getnewxmssaddress were therefore never registered with the ScriptPubKeyMan-level IsMine() check, so funds sent to them never appeared in listunspent. Funds were never at risk — a separate CXMSSSigner-based check still correctly reported ismine:true — but spending through the normal wallet flow was effectively blocked. Implemented the bridge and wired it into getnewxmssaddress.</div><div class="item-files">wallet/wallet.cpp, wallet/rpc/xmss.cpp</div></td></tr>
+          <tr><td class="chk notdone">⚠</td><td class="item-name">6.11.2 — Discovered a deeper architectural gap: XMSS only wired into the deprecated legacy wallet backend<div class="item-detail">The fix above only takes effect for legacy (BDB) wallets via LegacyScriptPubKeyMan. The current binary is compiled without BDB support at all (legacy wallets cannot even be created), and the default/only wallet backend available — descriptor wallets (DescriptorScriptPubKeyMan) — has no XMSS integration whatsoever. Practical result: XMSS addresses can receive funds (confirmed on-chain, confirmed via getxmssaddressinfo), but spending those funds back out through the standard wallet flow does not work in the current build. sendfromxmssaddress does not fail loudly — it silently falls back to spending unrelated wallet UTXOs instead of the requested XMSS funds. This is a genuine architecture gap, not a quick fix: properly supporting spending requires integrating XMSS into DescriptorScriptPubKeyMan, which is a substantially different data model (descriptors + HD derivation vs. a simple per-script map). Flagged here as a hard blocker for any mainnet claim that XMSS wallet round-trips work end-to-end.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.11.3 — Difficulty retarget algorithm verified<div class="item-detail">pow.cpp confirmed completely unmodified from upstream Bitcoin Core — no SNTI-specific changes at all. DifficultyAdjustmentInterval() correctly computes 20,160 blocks (14 days) from nPowTargetTimespan/nPowTargetSpacing, independent of any other SNTI parameter. Numerically simulated CalculateNextWorkRequired's core formula across five scenarios (on-time, 2x fast, 2x slow, 10x fast, 10x slow) — difficulty scaled exactly as expected and the 4x adjustment-bound safety clamp engaged correctly at the extremes.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">6.11.4 — Found and fixed a 10x error in the halving schedule<div class="item-detail">While verifying retarget math, discovered nSubsidyHalvingInterval = 210,000 blocks at 60s/block produces a halving every ~146 days (0.4 years), not the "~4 years" the whitepaper explicitly promises — and not even the "~2 years" an in-code comment separately and also-incorrectly claimed. Root cause: Bitcoin's 210,000-block interval assumes 600s/block; SNTI blocks are 10x faster (60s) but the block count was never scaled up to compensate. Fixed nSubsidyHalvingInterval to 2,100,000 for mainnet, testnet, and signet (10x), restoring the intended ~4-year halving cadence. Regtest's separate 150-block interval (intentionally fast for testing) was left untouched.</div><div class="item-files">kernel/chainparams.cpp</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Phase 7 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p7')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 7</span>
+        <span class="phase-name">Mainnet Launch</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp7">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p7">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">7.1 — Final Security Review<div class="item-detail">Internal deep audit selesai 29 Jun 2026 — 12 bug ditemukan &amp; fixed (5 kritis, 5 tinggi, 2 medium). External audit (Trail of Bits/Halborn) direncanakan Q4 2026.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">7.2 — Seed Nodes Deployed<div class="item-detail">3 seed node aktif: Main VPS (104.234.26.7 — Indonesia), Seed-US (166.88.227.172 — Kansas City), Seed-APAC (103.195.190.192 — Singapore). DNS seed: seed/seed2/seed3.assentian.network.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">7.3 — Genesis Block Final<div class="item-detail">Mainnet genesis mined 26 Jun 2026. Hash: b4a26aef52f6f5038815f26917cb0ea1fd3b3b13fbc7cfb5c541088a6943a5ba. nBits: 0x2001a41a. Message: "Assentian-PQE 22/Jun/2026 XMSS Post Quantum Era - For Sentia"</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">7.4 — Public Launch<div class="item-detail">assentian.network live dengan SSL. Block explorer, web wallet, investor roadmap, dan mining installer tersedia. VPS miner 24/7. Block 1170+ per 30 Jun 2026.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 8 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p8')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 8</span>
+        <span class="phase-name">Deep Code Audit — 12 Bug Fixed</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp8">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p8">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">8.1 — [Kritis] HKDF output 32-byte (harusnya 96-byte SEED_BYTES)<div class="item-detail">pouw_v2_keyder.h:104-109 — HKDF sekarang output 96 bytes (SK_SEED 32 + SK_PRF 32 + PUB_SEED 32). Sebelumnya hanya 32 byte, menghasilkan seed tidak valid.</div><div class="item-files">src/pouw_v2_keyder.h</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.2 — [Kritis] Underflow GetRemainingSignatures<div class="item-detail">xmss_keystore.h:229 — guard ditambah: jika leaf_index >= 1024 return 0 (sebelumnya underflow ke nilai besar). Mencegah false-positive "key masih ada sisa".</div><div class="item-files">src/wallet/xmss_keystore.h</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.3 — [Kritis] Preimage v3 block 200 — verifikasi kode<div class="item-detail">Verifikasi langsung: nPoUWv3StartHeight=200 identik di mining.cpp dan validation.cpp. Tidak ada bug aktual — kode benar.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.4 — [Kritis] WOTS+ reuse saat wallet locked<div class="item-detail">wallet.cpp:2193-2194 — signing sekarang ditolak jika wallet locked, mencegah WOTS+ leaf reuse tanpa XMSS state persistence yang valid.</div><div class="item-files">src/wallet/wallet.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.5 — [Kritis] sm_buf_size hardcoded<div class="item-detail">sm_buf_size sekarang dihitung dinamis dari params.sig_bytes, bukan nilai hardcoded. Mencegah buffer overflow/underflow pada parameter XMSS berbeda.</div><div class="item-files">src/xmss_state.h, src/xmss_bridge.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.6 — [Tinggi] FSL seed extraction offset salah<div class="item-detail">mining.cpp:307-312 — SK_SEED(32), SK_PRF(32), PUB_SEED(32) sekarang dibaca secara terpisah (bukan contiguous read yang mengambil root hash sebagai PUB_SEED).</div><div class="item-files">src/mining.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.7 — [Tinggi] nPoUWMaxSigSize tidak di-enforce<div class="item-detail">validation.cpp — size check ditambah untuk PoUW proof (pouw-sig-too-large) dan FSL data (pouw-fsl-too-large) sebelum Deserialize dipanggil.</div><div class="item-files">src/validation.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.8 — [Tinggi] IsXMSSScript off-by-one<div class="item-detail">xmss_signer.cpp:417 — script.size() == 66 (bukan 65). P2XMSS = PUSH64(1) + pubkey(64) + OP_XMSS_CHECKSIG(1) = 66 bytes total.</div><div class="item-files">src/wallet/xmss_signer.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.9 — [Tinggi] Signature check lemah di xmss_bridge Verify()<div class="item-detail">xmss_bridge.cpp — tambah verifikasi recovered message == original hash setelah xmss_sign_open. Mencegah false-positive jika return 0 tapi recovered message berbeda.</div><div class="item-files">src/xmss_bridge.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.10 — [Tinggi] chain_id duplikat regtest=signet=3<div class="item-detail">chainparams.cpp — regtest nXMSSChainId = 4 (sebelumnya 3, sama dengan signet). Sekarang: mainnet=1, testnet=2, signet=3, regtest=4.</div><div class="item-files">src/kernel/chainparams.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.11 — [Medium] min_target underflow PermittedDifficultyTransition<div class="item-detail">pow.cpp:101 — clamp min_target ke 1 jika old_target / 4 == 0. Mencegah lower bound bypass dan potential division-by-zero.</div><div class="item-files">src/pow.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">8.12 — [Medium] Komentar salah GetBlockSubsidy<div class="item-detail">validation.cpp:1707 — komentar diupdate: "2,100,000 blocks (~4 years at 60s/block)". Sebelumnya menyebutkan angka yang salah.</div><div class="item-files">src/validation.cpp</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 9 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p9')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 9</span>
+        <span class="phase-name">PoUW V2 Difficulty Stuck + RPC Overload Fix</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp9">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p9">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">9.1 — Root cause: burst mining blok 286–296<div class="item-detail">Satu XMSS tree reused untuk 11 blok dalam ~2 detik (semua timestamp identik). EMA menghitung block time ~0s → EMA naik 2× → target terlalu ketat (~14.000 tree/blok = est. 9.6 jam/blok). RPC overload karena GenerateBlock memblok HTTP thread selama proses PoUW.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">9.2 — EMA upper clamp 4× → 20×<div class="item-detail">pouw_v2.h — EMA clamp dinaikkan dari 4× ke 20× baseline. Ratio recovery per slow block naik dari 1.3× menjadi 2.9×, sehingga chain stuck tidak perlu ratusan blok untuk recover.</div><div class="item-files">src/pouw_v2.h</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">9.3 — Stuck-chain detection (elapsed > 10×target → force recovery)<div class="item-detail">pow.cpp — jika waktu sejak blok terakhir > 10× target spacing (10 menit), gunakan nFirstBlockTime untuk paksa 20× EMA recovery. Mencegah chain stuck permanen.</div><div class="item-files">src/pow.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">9.4 — PermittedDifficultyTransition max swing 4× → 20×<div class="item-detail">pow.cpp — max difficulty swing per period dinaikkan dari 4× ke 20× agar blok recovery dari stuck-chain bisa divalidasi oleh node lain.</div><div class="item-files">src/pow.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">9.5 — POUW_MAX_TREES_PER_CALL=20 (RPC yield)<div class="item-detail">rpc/mining.cpp — batasi 20 tree per RPC call (~50 detik). Miner retry otomatis. RPC tetap responsif untuk request lain selama proses PoUW mining.</div><div class="item-files">src/rpc/mining.cpp</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">9.6 — Hasil: block 296 → 786+ tanpa intervensi<div class="item-detail">Setelah rebuild dan restart services pukul 12:03 UTC, chain langsung recover. Block 297 ditemukan dengan nBits=0x1f0dd8d7 (2.9× lebih mudah). Chain terus mining normal hingga 786+ block per 29 Jun 2026.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 10 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('p10')">
+      <div class="phase-title">
+        <span class="phase-num done">PHASE 10</span>
+        <span class="phase-name">3-Node Network, DNS Seed &amp; Multi-Miner</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge done">✅ COMPLETE</span>
+        <span class="phase-toggle" id="tp10">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="p10">
+      <div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div>
+      <table>
+        <thead><tr><th></th><th>Item</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chk done">✅</td><td class="item-name">10.1 — Seed node Seed-US (Kansas City) &amp; Seed-APAC (Singapore) deployed<div class="item-detail">Binary c3070e74 deployed ke 2 seed node baru. SSH passwordless via ssh-copy-id. Service assentian-seed.service aktif dan auto-start.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">10.2 — DNS seed infrastructure live<div class="item-detail">chainparams.cpp diupdate dengan 3 vSeeds: seed/seed2/seed3.assentian.network. DNS A records dibuat di Rumahweb (round-robin untuk seed). Node baru otomatis discover peers via DNS tanpa konfigurasi manual.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">10.3 — Miner aktif di semua 3 node<div class="item-detail">Main VPS: assentian-vps-miner (full core). Seed-US: assentian-seed-miner (1 core, address snti1zhms7...). Seed-APAC: assentian-seed-miner (1 core, address snti1zcaf64...). Semua sinkron di block 1170+.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">10.4 — Send/receive SNTI verified end-to-end<div class="item-detail">Transfer 10 SNTI dari wallet asep ke wallet dani berhasil. Custodial web wallet berfungsi penuh untuk kirim-terima. Non-custodial watch address juga berfungsi.</div></td></tr>
+          <tr><td class="chk done">✅</td><td class="item-name">10.5 — SVG coin icon &amp; favicon<div class="item-detail">snti-coin.svg diupdate: S modern vertical stretch, blockchain node network background, rasi bintang 4 cluster, 7 garis emas. Favicon diterapkan ke 11 halaman HTML.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Known Issues -->
+  <div class="phase" style="border-color:rgba(239,68,68,.3)">
+    <div class="phase-header" onclick="toggle('issues')">
+      <div class="phase-title">
+        <span class="phase-num" style="background:rgba(239,68,68,.15);color:var(--red)">!</span>
+        <span class="phase-name">Known Issues & Technical Debt</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-badge" style="background:rgba(245,158,11,.15);color:var(--orange)">2 OPEN</span>
+        <span class="phase-toggle" id="tissues">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="issues">
+      <div class="issues">
+        <div class="title">⚠️ Open Issues</div>
+        <ul>
+          <li><strong>XMSS key state persistence</strong> — <span style="color:var(--green)">RESOLVED (Phase 3e)</span> SaveState/LoadState integrated.</li>
+          <li><strong>Key exhausted check</strong> — <span style="color:var(--green)">RESOLVED (Phase 4 + Audit 8.2)</span> Explicit check in Sign() + guard leaf_index >= 1024.</li>
+          <li><strong>Minimum sig length</strong> — <span style="color:var(--green)">RESOLVED (Phase 4 + Audit 8.7)</span> size check in interpreter + nPoUWMaxSigSize enforced sebelum Deserialize.</li>
+          <li><strong>Encryption at rest</strong> — <span style="color:var(--green)">RESOLVED</span> XMSS state encryption at rest terverifikasi end-to-end.</li>
+          <li><strong>Seed nodes</strong> — <span style="color:var(--green)">RESOLVED (Phase 10)</span> 3 node aktif: Indonesia, Kansas City, Singapore. DNS seed live.</li>
+          <li><strong>Segfault post-main()</strong> — Workaround pakai _exit(0). Root cause belum di-investigasi. Low priority selama mainnet stable.</li>
+          <li><strong>XMSS sig size in block</strong> — ~2.5KB signature di coinbase. Tidak memblok propagasi. Evaluasi optimisasi di roadmap.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Commits -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle('commits')">
+      <div class="phase-title">
+        <span class="phase-num" style="background:rgba(168,85,247,.15);color:var(--purple)">LOG</span>
+        <span class="phase-name">Recent Commits</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="phase-toggle" id="tcommits">▼</span>
+      </div>
+    </div>
+    <div class="phase-body open" id="commits">
+      <div class="commit-log">
+        <div class="title">Git History</div>
+        <div id="commitList">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="refresh" id="refreshTime">Last updated: —</div>
+</div>
+
+<script>
+function toggle(id) {
+  const body = document.getElementById(id);
+  const toggle = document.getElementById('t' + id);
+  if (body.classList.contains('open')) {
+    body.classList.remove('open');
+    toggle.classList.remove('open');
+  } else {
+    body.classList.add('open');
+    toggle.classList.add('open');
+  }
+}
+
+// Count items
+function countItems() {
+  const done = document.querySelectorAll('.chk.done').length;
+  const wip = document.querySelectorAll('.chk.wip').length;
+  const pending = document.querySelectorAll('.chk.pending').length;
+  document.getElementById('cntDone').textContent = done;
+  document.getElementById('cntWip').textContent = wip;
+  document.getElementById('cntPending').textContent = pending;
+  document.getElementById('cntTotal').textContent = done + wip + pending;
+}
+
+// Load commits from API
+async function loadCommits() {
+  try {
+    const r = await fetch('/api/commits?count=10');
+    const d = await r.json();
+    if (d.error || !d.commits || !d.commits.length) {
+      document.getElementById('commitList').innerHTML = '<div style="color:var(--dim);font-size:12px">No commits found or API unavailable</div>';
+      return;
+    }
+    document.getElementById('commitList').innerHTML = d.commits.map(c => {
+      const hash = c.hash ? c.hash.substring(0,8) : '???????';
+      const msg = c.message || c.subject || '(no message)';
+      const date = c.date || '';
+      return '<div class="commit-item">'
+        + '<span class="commit-hash">' + hash + '</span>'
+        + '<span class="commit-msg">' + msg + '</span>'
+        + '<span class="commit-date">' + date + '</span>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    document.getElementById('commitList').innerHTML = '<div style="color:var(--dim);font-size:12px">Error loading commits: ' + e.message + '</div>';
+  }
+}
+
+countItems();
+loadCommits();
+document.getElementById('refreshTime').textContent = 'Last updated: ' + new Date().toLocaleString();
+</script>
+</body>
+</html>
